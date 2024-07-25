@@ -19,36 +19,28 @@ def deconv_block(d, filters, strides=1):
     return d
 
 def vggEncoder(input_shape):
-    first_filter = 16
     inputs = L.Input(shape=input_shape)
+    x = conv_block(inputs, filters=16, strides=1)
+    x = conv_block(x, filters=32, strides=1)
+    x = conv_block(x, filters=64, strides=1)
+    x = conv_block(x, filters=128, strides=1)
+    x = conv_block(x, filters=256, strides=1)
+    x = conv_block(x, filters=512, strides=1)
 
-    x = L.Conv2D(first_filter, kernel_size=7, strides=1, padding='same')(inputs)
-    x = L.BatchNormalization()(x)
-    x = L.LeakyReLU(alpha=0.2)(x)
-
-    for value in range(first_filter, input_shape[0] + 1):
-        if (value & (value - 1)) == 0 and value >= first_filter:
-            x = conv_block(x, filters=value, strides=1)
-
-    encoder_model = Model(inputs, x, name='encoder')
+    encoder_model = Model(inputs=inputs, outputs=x)
     return encoder_model
 
-def vggDecoder(tensor):
-    input_shape = tf.keras.backend.int_shape(tensor)
-    start = 16
-    end = input_shape[3]
-    inputs = L.Input(shape=input_shape[1:])
 
-    x = L.Conv2DTranspose(end, kernel_size=7, strides=1, padding='same')(inputs)
-    x = L.BatchNormalization()(x)
-    x = L.LeakyReLU(alpha=0.2)(x)
+def vggDecoder(input_shape):
+    inputs = L.Input(shape=(8,8,512))
+    x = deconv_block(inputs, filters=512, strides=1)
+    x = deconv_block(x, filters=256, strides=1)
+    x = deconv_block(x, filters=128, strides=1)
+    x = deconv_block(x, filters=64, strides=1)
+    x = deconv_block(x, filters=32, strides=1)
+    x = deconv_block(x, filters=16, strides=1)
 
-    for value in range(end, start - 1, -1):
-        if (value & (value - 1)) == 0 and value <= end:
-            x = deconv_block(x, filters=value, strides=1)
-
-    x = L.Conv2D(8, kernel_size=7, strides=1, padding='same', activation='relu')(x)
-    x = L.Conv2D(3, kernel_size=7, strides=1, padding='same', activation='linear')(x)
+    outputs = L.Conv2DTranspose(3, (6,6), activation='sigmoid', padding='same', strides=(1,1), kernel_initializer='he_normal')(x)
     
-    decoder_model = Model(inputs=inputs, outputs=x)
+    decoder_model = Model(inputs=inputs, outputs=outputs)
     return decoder_model
