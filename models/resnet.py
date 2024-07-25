@@ -60,20 +60,20 @@ def resEncoder(input_shape):
             x = resnet_block(x, filters=value, strides=2)
 
     encoder_model = Model(inputs, x, name='encoder')
-    encoder_model.summary()
+    return encoder_model
 
 
 
-def resDecoder(input_shape):
-    first_filter = 16
+def resDecoder(tensor):
+    input_shape = tf.keras.backend.int_shape(tensor)
     start = 16
-    end = 512
-    inputs = layers.Input(shape=input_shape)
+    end = input_shape[3]
+    inputs = layers.Input(shape=input_shape[1:])
 
-    x = layers.Conv2DTranspose(512, kernel_size=7, strides=1, padding='same')(inputs)
+    x = layers.Conv2DTranspose(end, kernel_size=7, strides=1, padding='same')(inputs)
     x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU(alpha=0.2)(x)
-    x = layers.Conv2DTranspose(512, kernel_size=7, strides=1, padding='same')(x)
+    x = layers.Conv2DTranspose(end, kernel_size=7, strides=1, padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.LeakyReLU(alpha=0.2)(x)
 
@@ -84,5 +84,4 @@ def resDecoder(input_shape):
     x = layers.Conv2D(8, kernel_size=7, strides=1, padding='same', activation='relu')(x)
     x = layers.Conv2D(3, kernel_size=7, strides=1, padding='same', activation='linear')(x)
     decoder_model = Model(inputs=inputs, outputs=x)
-    decoder_model.summary()
-    
+    return decoder_model
