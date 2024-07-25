@@ -47,3 +47,17 @@ def resnet_deconv_block(x, filters, strides=1):
 
 
 
+def resEncoder(input_shape):
+    first_filter = 16
+    inputs = layers.Input(shape=input_shape)
+
+    x = layers.Conv2D(first_filter, kernel_size=7, strides=1, padding='same')(inputs)
+    x = layers.BatchNormalization()(x)
+    x = layers.LeakyReLU(alpha=0.2)(x)
+
+    for value in range(first_filter, input_shape[0] + 1):
+        if (value & (value - 1)) == 0 and value >= first_filter:
+            x = resnet_block(x, filters=value, strides=2)
+
+    encoder_model = Model(inputs, x, name='encoder')
+    encoder_model.summary()
